@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     worker = new HttpRequestWorker(this);
+    setEnabledButtons(true);
 }
 
 MainWindow::~MainWindow()
@@ -20,7 +21,7 @@ MainWindow::~MainWindow()
 ///PUSHBUTTON_SLOTS
 void MainWindow::on_pb_connect_clicked()
 {
-    setCheckableButtons(false);
+    setEnabledButtons(false);
 
     QString url_str = ui->le_url->text();
     HttpRequestInput input(url_str, "GET");
@@ -72,13 +73,31 @@ void MainWindow::on_pb_cleanlog_clicked()
 }
 
 ///SPECIAL
-void MainWindow::setCheckableButtons(bool status)
+void MainWindow::setEnabledButtons(bool status)
 {
-    ui->pb_addcontainer->setCheckable(status);
-    ui->pb_connect->setCheckable(status);
-    ui->pb_delete->setCheckable(status);
-    ui->pb_download->setCheckable(status);
-    ui->pb_upload->setCheckable(status);
+    ui->pb_connect->setEnabled(status);
+    ui->pb_addcontainer->setEnabled(status);
+    ui->pb_getcontainers->setEnabled(status);
+
+    if(ui->lv_containers->count() && ui->lv_containers->currentRow() != -1) {
+        ui->pb_deletecontainer->setEnabled(status);
+        ui->pb_getobjects->setEnabled(status);
+        ui->pb_upload->setEnabled(status);
+    } else {
+        ui->pb_deletecontainer->setEnabled(false);
+        ui->pb_getobjects->setEnabled(false);
+        ui->pb_upload->setEnabled(false);
+    }
+
+    if(ui->lv_objects->count() && ui->lv_objects->currentRow() != -1) {
+        ui->pb_download->setEnabled(status);
+        ui->pb_delete->setEnabled(status);
+    } else {
+        ui->pb_download->setEnabled(false);
+        ui->pb_delete->setEnabled(false);
+    }
+
+    ui->pb_cleanlog->setEnabled(status);
 }
 void MainWindow::standarnResponse(QNetworkReply* reply, QString msg)
 {
@@ -106,7 +125,7 @@ void MainWindow::standarnResponse(QNetworkReply* reply, QString msg)
     ui->tb_log->append(str);
 
     disconnect(worker, SIGNAL(on_execution_finished(QNetworkReply*)), 0, 0);
-    setCheckableButtons(true);
+    setEnabledButtons(true);
 }
 
 ///REQUESTS
@@ -117,6 +136,7 @@ GET /{api version}/{account} HTTP/1.1
 Host: {fqdn}
 X-Auth-Token: {auth-token}
 */
+    setEnabledButtons(false);
     connect(worker, SIGNAL(on_execution_finished(QNetworkReply*)),
                     this,   SLOT(responseGetContainers(QNetworkReply*)));
     HttpRequestInput input(url, "GET");
@@ -133,6 +153,7 @@ X-Container-Read: {comma-separated-uids}
 X-Container-Write: {comma-separated-uids}
 X-Container-Meta-{key}: {value}
 */
+    setEnabledButtons(false);
     connect(worker, SIGNAL(on_execution_finished(QNetworkReply*)),
                     this,   SLOT(responseAddContainer(QNetworkReply*)));
     url+=("/"+ui->te_containername->toPlainText());
@@ -150,8 +171,11 @@ GET /{api version}/{container} HTTP/1.1
 Host: {fqdn}
 X-Auth-Token: {auth-token}
 */
+    setEnabledButtons(false);
     connect(worker, SIGNAL(on_execution_finished(QNetworkReply*)),
                     this,   SLOT(responseGetContainerObjects(QNetworkReply*)));
+    QListWidgetItem* item = ui->lv_containers->currentItem();
+    url.append("/" + item->text());
     HttpRequestInput input(url, "GET");
     input.add_fea ("X-Auth-Token", token);
     worker->execute(&input);
@@ -163,8 +187,11 @@ DELETE /{api version}/{account}/{container} HTTP/1.1
 Host: {fqdn}
 X-Auth-Token: {auth-token}
 */
+    setEnabledButtons(false);
     connect(worker, SIGNAL(on_execution_finished(QNetworkReply*)),
                     this,   SLOT(responseDeleteContainer(QNetworkReply*)));
+    QListWidgetItem* item = ui->lv_containers->currentItem();
+    url.append("/" + item->text());
     HttpRequestInput input(url, "DELETE");
     input.add_fea ("X-Auth-Token", token);
     worker->execute(&input);
@@ -176,6 +203,7 @@ PUT /{api version}/{account}/{container}/{object} HTTP/1.1
 Host: {fqdn}
 X-Auth-Token: {auth-token}
 */
+    setEnabledButtons(false);
     connect(worker, SIGNAL(on_execution_finished(QNetworkReply*)),
                     this,   SLOT(responseUploadObject(QNetworkReply*)));
     HttpRequestInput input(url, "PUT");
@@ -189,6 +217,7 @@ GET /{api version}/{account}/{container}/{object} HTTP/1.1
 Host: {fqdn}
 X-Auth-Token: {auth-token}
 */
+    setEnabledButtons(false);
     connect(worker, SIGNAL(on_execution_finished(QNetworkReply*)),
                     this,   SLOT(responseDownloadObject(QNetworkReply*)));
     HttpRequestInput input(url, "GET");
@@ -202,6 +231,7 @@ DELETE /{api version}/{account}/{container}/{object} HTTP/1.1
 Host: {fqdn}
 X-Auth-Token: {auth-token}
 */
+    setEnabledButtons(false);
     connect(worker, SIGNAL(on_execution_finished(QNetworkReply*)),
                     this,   SLOT(responseDeleteObject(QNetworkReply*)));
     HttpRequestInput input(url, "DELETE");
@@ -242,6 +272,7 @@ void MainWindow::responseAuthentication(QNetworkReply *reply)
     QString str = QString::fromUtf8(bytes.data(), bytes.size());
     ui->tb_log->append(str);
 
+    setEnabledButtons(true);
     disconnect(worker, SIGNAL(on_execution_finished(QNetworkReply*)), 0, 0);
     emit ready_to_work(token, url);
     disconnect(this, SIGNAL(ready_to_work(QString,QString)), 0, 0);
@@ -276,6 +307,7 @@ void MainWindow::responseGetContainers(QNetworkReply* reply)
 void MainWindow::responseAddContainer(QNetworkReply* reply)
 {
     standarnResponse(reply);
+    emit ui->pb_getcontainers->clicked();
 }
 void MainWindow::responseGetContainerObjects(QNetworkReply* reply)
 {
@@ -284,6 +316,7 @@ void MainWindow::responseGetContainerObjects(QNetworkReply* reply)
 void MainWindow::responseDeleteContainer(QNetworkReply* reply)
 {
     standarnResponse(reply);
+    emit ui->pb_getcontainers->clicked();
 }
 void MainWindow::responseUploadObject(QNetworkReply* reply)
 {
@@ -296,4 +329,9 @@ void MainWindow::responseDownloadObject(QNetworkReply* reply)
 void MainWindow::responseDeleteObject(QNetworkReply* reply)
 {
     standarnResponse(reply);
+}
+
+void MainWindow::on_lv_containers_itemSelectionChanged()
+{
+    setEnabledButtons(ui->pb_connect->isEnabled());
 }

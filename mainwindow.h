@@ -20,7 +20,7 @@ private:
     Ui::MainWindow *ui;
     HttpRequestWorker *worker;
 
-    void setCheckableButtons(bool status);
+    void setEnabledButtons(bool status);
     void standarnResponse(QNetworkReply* reply, QString msg = 0);
 
 private slots:
@@ -53,6 +53,8 @@ private slots:
     void responseUploadObject(QNetworkReply* reply);
     void responseDownloadObject(QNetworkReply* reply);
     void responseDeleteObject(QNetworkReply* reply);
+
+    void on_lv_containers_itemSelectionChanged();
 
 signals:
     void ready_to_work (QString token, QString url);

@@ -31,7 +31,7 @@ private slots:
 
     void on_pb_addcontainer_clicked();
     void on_pb_deletecontainer_clicked();
-    void on_pb_getobjects_clicked();
+    void on_pb_reloadobj_clicked();
 
     void on_pb_upload_clicked();
     void on_pb_download_clicked();
@@ -55,6 +55,7 @@ private slots:
     void responseDeleteObject(QNetworkReply* reply);
 
     void on_lv_containers_itemSelectionChanged();
+    void on_lv_objects_itemSelectionChanged();
 
 signals:
     void ready_to_work (QString token, QString url);

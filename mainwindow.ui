@@ -179,19 +179,6 @@
       <string>Delete</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pb_getobjects">
-     <property name="geometry">
-      <rect>
-       <x>220</x>
-       <y>100</y>
-       <width>75</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Objects</string>
-     </property>
-    </widget>
     <widget class="QListWidget" name="lv_containers">
      <property name="geometry">
       <rect>
@@ -215,16 +202,6 @@
     <property name="title">
      <string>Objects</string>
     </property>
-    <widget class="QPlainTextEdit" name="te_path">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>20</y>
-       <width>211</width>
-       <height>31</height>
-      </rect>
-     </property>
-    </widget>
     <widget class="QPushButton" name="pb_upload">
      <property name="geometry">
       <rect>
@@ -268,10 +245,23 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>70</y>
+       <y>20</y>
        <width>211</width>
-       <height>161</height>
+       <height>211</height>
       </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pb_reloadobj">
+     <property name="geometry">
+      <rect>
+       <x>230</x>
+       <y>130</y>
+       <width>75</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Reload Obj</string>
      </property>
     </widget>
    </widget>

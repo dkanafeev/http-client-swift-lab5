@@ -3,6 +3,9 @@
 #include <QNetworkReply>
 #include <QMessageBox>
 #include <QFile>
+#include <QFileDialog>
+#include <QMimeType>
+#include <QMimeDatabase>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -47,7 +50,7 @@ void MainWindow::on_pb_deletecontainer_clicked()
     connect(this, SIGNAL(ready_to_work(QString, QString)), this, SLOT(requestDeleteContainer(QString,QString)));
     emit ui->pb_connect->clicked();
 }
-void MainWindow::on_pb_getobjects_clicked()
+void MainWindow::on_pb_reloadobj_clicked()
 {
     connect(this, SIGNAL(ready_to_work(QString, QString)), this, SLOT(requestGetContainerObjects(QString,QString)));
     emit ui->pb_connect->clicked();
@@ -81,11 +84,11 @@ void MainWindow::setEnabledButtons(bool status)
 
     if(ui->lv_containers->count() && ui->lv_containers->currentRow() != -1) {
         ui->pb_deletecontainer->setEnabled(status);
-        ui->pb_getobjects->setEnabled(status);
+        ui->pb_reloadobj->setEnabled(status);
         ui->pb_upload->setEnabled(status);
     } else {
         ui->pb_deletecontainer->setEnabled(false);
-        ui->pb_getobjects->setEnabled(false);
+        ui->pb_reloadobj->setEnabled(false);
         ui->pb_upload->setEnabled(false);
     }
 
@@ -108,7 +111,7 @@ void MainWindow::standarnResponse(QNetworkReply* reply, QString msg)
         else
             msg = "Error STD_RESP: " + reply->errorString() + "\n\n";
     }
-    QMessageBox::information(this, "", msg);
+    //QMessageBox::information(this, "", msg);
 
     QString headResponse;
     QList<QByteArray> headerList = reply->rawHeaderList();
@@ -206,8 +209,23 @@ X-Auth-Token: {auth-token}
     setEnabledButtons(false);
     connect(worker, SIGNAL(on_execution_finished(QNetworkReply*)),
                     this,   SLOT(responseUploadObject(QNetworkReply*)));
+
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), ".");
+    QFileInfo fileInfo(fileName);
+    QMimeDatabase db;
+    QMimeType fileType = db.mimeTypeForFile(fileInfo);
+
+    qDebug() << "fileName: " << fileName;
+    qDebug() << "fileInfo.fileName: " << fileInfo.fileName();
+    qDebug() << "fileInfo.filePath: " << fileInfo.filePath();
+    qDebug() << "fileType: " << fileType.name();
+
+    QListWidgetItem* container = ui->lv_containers->currentItem();
+    url.append("/" + container->text() + "/" + fileInfo.fileName());
+
     HttpRequestInput input(url, "PUT");
     input.add_fea ("X-Auth-Token", token);
+    input.add_file(fileInfo.fileName(), fileInfo.filePath(), NULL, fileType.name());
     worker->execute(&input);
 }
 void MainWindow::requestDownloadObject(QString token, QString url)
@@ -220,6 +238,9 @@ X-Auth-Token: {auth-token}
     setEnabledButtons(false);
     connect(worker, SIGNAL(on_execution_finished(QNetworkReply*)),
                     this,   SLOT(responseDownloadObject(QNetworkReply*)));
+    QListWidgetItem* container = ui->lv_containers->currentItem();
+    QListWidgetItem* object = ui->lv_objects->currentItem();
+    url.append("/" + container->text() + "/" + object->text());
     HttpRequestInput input(url, "GET");
     input.add_fea ("X-Auth-Token", token);
     worker->execute(&input);
@@ -234,6 +255,9 @@ X-Auth-Token: {auth-token}
     setEnabledButtons(false);
     connect(worker, SIGNAL(on_execution_finished(QNetworkReply*)),
                     this,   SLOT(responseDeleteObject(QNetworkReply*)));
+    QListWidgetItem* container = ui->lv_containers->currentItem();
+    QListWidgetItem* object = ui->lv_objects->currentItem();
+    url.append("/" + container->text() + "/" + object->text());
     HttpRequestInput input(url, "DELETE");
     input.add_fea ("X-Auth-Token", token);
     worker->execute(&input);
@@ -255,7 +279,7 @@ void MainWindow::responseAuthentication(QNetworkReply *reply)
         disconnect(this, SIGNAL(ready_to_work(QString,QString)), 0, 0);
     }
 
-    QMessageBox::information(this, "", msg);
+    //QMessageBox::information(this, "", msg);
 
     QList<QByteArray> headerList = reply->rawHeaderList();
     foreach(QByteArray head, headerList)
@@ -311,6 +335,12 @@ void MainWindow::responseAddContainer(QNetworkReply* reply)
 }
 void MainWindow::responseGetContainerObjects(QNetworkReply* reply)
 {
+    QByteArray bytes = reply->readAll();
+    QString str = QString::fromUtf8(bytes.data(), bytes.size());
+    QStringList test = str.split(QRegExp("[\r\n]"),QString::SkipEmptyParts);
+    ui->lv_objects->clear();
+    ui->lv_objects->addItems(test);
+
     standarnResponse(reply);
 }
 void MainWindow::responseDeleteContainer(QNetworkReply* reply)
@@ -321,17 +351,40 @@ void MainWindow::responseDeleteContainer(QNetworkReply* reply)
 void MainWindow::responseUploadObject(QNetworkReply* reply)
 {
     standarnResponse(reply);
+    emit ui->pb_reloadobj->clicked();
 }
 void MainWindow::responseDownloadObject(QNetworkReply* reply)
 {
+    QByteArray bytes = reply->readAll();
+//    QString str = QString::fromUtf8(bytes.data(), bytes.size());
+//    qDebug() << "File. Start>" << str << "<end";
+
+//    QListWidgetItem = object
+//    QString filePath;
+    QFile file(ui->lv_objects->currentItem()->text());
+    if(file.open(QIODevice::WriteOnly))
+    {
+        file.write(bytes);
+        file.close();
+    }
+    else
+        qDebug() << "Error: " << file.errorString();
+
     standarnResponse(reply);
 }
 void MainWindow::responseDeleteObject(QNetworkReply* reply)
 {
     standarnResponse(reply);
+    emit ui->pb_reloadobj->clicked();
 }
 
+///LIST_WIDGETS_SLOTS
 void MainWindow::on_lv_containers_itemSelectionChanged()
+{
+    setEnabledButtons(ui->pb_connect->isEnabled());
+    emit on_pb_reloadobj_clicked();
+}
+void MainWindow::on_lv_objects_itemSelectionChanged()
 {
     setEnabledButtons(ui->pb_connect->isEnabled());
 }

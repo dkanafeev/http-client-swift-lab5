@@ -127,6 +127,8 @@ void MainWindow::standarnResponse(QNetworkReply* reply, QString msg)
     QString str = QString::fromUtf8(bytes.data(), bytes.size());
     ui->tb_log->append(str);
 
+    ui->tb_log->append(msg);
+
     disconnect(worker, SIGNAL(on_execution_finished(QNetworkReply*)), 0, 0);
     setEnabledButtons(true);
 }
@@ -295,6 +297,7 @@ void MainWindow::responseAuthentication(QNetworkReply *reply)
     QByteArray bytes = reply->readAll();
     QString str = QString::fromUtf8(bytes.data(), bytes.size());
     ui->tb_log->append(str);
+    ui->tb_log->append(msg);
 
     setEnabledButtons(true);
     disconnect(worker, SIGNAL(on_execution_finished(QNetworkReply*)), 0, 0);
@@ -314,12 +317,11 @@ void MainWindow::responseGetContainers(QNetworkReply* reply)
 
     QVariant code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
     if (reply->error() == QNetworkReply::NoError){
-        msg = "Success GetContainers! ";
         if (code == QNetworkReply::AuthenticationRequiredError){
-            msg += "No content! ";
+            msg += "Not Success!";
         }
         else{
-            msg += "Have content! ";
+            msg += "Success GetContainers!";
         }
     }
     else{

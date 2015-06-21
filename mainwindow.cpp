@@ -111,7 +111,6 @@ void MainWindow::standarnResponse(QNetworkReply* reply, QString msg)
         else
             msg = "Error STD_RESP: " + reply->errorString() + "\n\n";
     }
-    //QMessageBox::information(this, "", msg);
 
     QString headResponse;
     QList<QByteArray> headerList = reply->rawHeaderList();
@@ -119,7 +118,7 @@ void MainWindow::standarnResponse(QNetworkReply* reply, QString msg)
     {
         headResponse += (head + ": " + reply->rawHeader(head) + "\n");
     }
-    ui->tb_log->append(headResponse+"\n");
+    ui->tb_log->append(headResponse);
 
     QByteArray bytes = reply->readAll();
     ui->tb_log->append("Size of reply body (in bytes):" + QString::number(bytes.size()) + "\n");
@@ -310,15 +309,16 @@ void MainWindow::responseGetContainers(QNetworkReply* reply)
 
     QVariant code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
     if (reply->error() == QNetworkReply::NoError){
-        if (code == QNetworkReply::AuthenticationRequiredError){
-            msg += "Not Success!";
+        msg += "Success! ";
+        if (code == 204){
+            msg += "No content!\n";
         }
         else{
-            msg += "Success GetContainers!";
+            msg += " Have content!\n";
         }
     }
     else{
-        msg = "Error GetContainers: " + reply->errorString() + "\n\n";
+        msg = "Error GetContainers: " + reply->errorString() + "\n";
     }
 
     standarnResponse(reply, msg);

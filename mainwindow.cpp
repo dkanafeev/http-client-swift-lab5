@@ -217,11 +217,6 @@ X-Auth-Token: {auth-token}
     QMimeDatabase db;
     QMimeType fileType = db.mimeTypeForFile(fileInfo);
 
-    qDebug() << "fileName: " << fileName;
-    qDebug() << "fileInfo.fileName: " << fileInfo.fileName();
-    qDebug() << "fileInfo.filePath: " << fileInfo.filePath();
-    qDebug() << "fileType: " << fileType.name();
-
     QListWidgetItem* container = ui->lv_containers->currentItem();
     url.append("/" + container->text() + "/" + fileInfo.fileName());
 
@@ -280,8 +275,6 @@ void MainWindow::responseAuthentication(QNetworkReply *reply)
         msg = "Error Authentication: " + reply->errorString() + "\n";
         disconnect(this, SIGNAL(ready_to_work(QString,QString)), 0, 0);
     }
-
-    //QMessageBox::information(this, "", msg);
 
     QList<QByteArray> headerList = reply->rawHeaderList();
     foreach(QByteArray head, headerList)
@@ -358,21 +351,28 @@ void MainWindow::responseUploadObject(QNetworkReply* reply)
 void MainWindow::responseDownloadObject(QNetworkReply* reply)
 {
     QByteArray bytes = reply->readAll();
-//    QString str = QString::fromUtf8(bytes.data(), bytes.size());
-//    qDebug() << "File. Start>" << str << "<end";
-
-//    QListWidgetItem = object
-//    QString filePath;
     QFile file(ui->lv_objects->currentItem()->text());
+    QString msg;
     if(file.open(QIODevice::WriteOnly))
     {
+        int index = 0;
+        unsigned occur = 0;
+        while ((index = bytes.indexOf('\n', index)) >= 0){
+            ++occur;
+            if (occur == 5){
+                bytes.remove(0, index + 1);
+                break;
+            }
+        }
+        bytes.remove(bytes.lastIndexOf('\n'), bytes.size());
         file.write(bytes);
         file.close();
+        msg.append("Success!\n");
     }
     else
-        qDebug() << "Error: " << file.errorString();
+        msg.append("Error: " + file.errorString() + "\n");
 
-    standarnResponse(reply);
+    standarnResponse(reply, msg);
 }
 void MainWindow::responseDeleteObject(QNetworkReply* reply)
 {

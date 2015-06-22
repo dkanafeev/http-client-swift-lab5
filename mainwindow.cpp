@@ -359,8 +359,9 @@ void MainWindow::responseDownloadObject(QNetworkReply* reply)
         unsigned occur = 0;
         while ((index = bytes.indexOf('\n', index)) >= 0){
             ++occur;
+            ++index;
             if (occur == 5){
-                bytes.remove(0, index + 1);
+                bytes.remove(0, index);
                 break;
             }
         }
